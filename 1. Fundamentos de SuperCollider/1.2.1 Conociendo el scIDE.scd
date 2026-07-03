@@ -25,10 +25,11 @@ Muestra el nombre de la sesión o sesiones y su ruta.
 Espacio de trabajo para crear, editar y ejecutar código.
 
 3. Pestañas de documentos
-Se encuentran por encima del editor, cada una corresponde a un documento. Se pueden navegar con Ctrl (o Cmd) + Tab, o Ctrl (o Cmd) + Shift + Tab
+Se encuentran por encima del editor, cada una corresponde a un documento.
+Se pueden navegar con Ctrl(^) + Tab, o Ctrl(^) + Shift + Tab.
 
 4. Barra de herramientas
-Muestra heeramientas relacionadas al código. Está oculta por defecto. Se puede activar desde View > Tool Panels, o con los siguientes comandos de teclado:
+Muestra herramientas relacionadas al código. Está oculta por defecto. Se puede activar desde View > Tool Panels, o con los siguientes comandos de teclado:
 
 Buscar: Ctrl + F
 Remplazar: Ctrl + R
@@ -67,5 +68,7 @@ Estos últimos tres elementos (lista de documentos, navegador de ayuda y ventana
 //Para ir al siguiente tutorial, ejecuta la siguiente línea de código:
 "1.3 Acciones básicas.scd".openOS;
 
+(PathName.new(thisProcess.nowExecutingPath).parentPath+/+"1.3 Acciones básicas.scd").openOS;
 //Para ir al tutorial anterior, ejecuta la siguiente línea de código:
 "1.2 Arquitectura de SuperCollider.scd".openOS;
+(PathName.new(thisProcess.nowExecutingPath).parentPath+/+"1.2 Arquitectura de SuperCollider.scd").openOS;

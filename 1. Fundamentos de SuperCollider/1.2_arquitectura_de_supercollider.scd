@@ -3,16 +3,16 @@
 
 Como plataforma, SuperCollider se compone de tres elementos principales:
 
-1)Servidores
+1) Servidores
 1.1 scsynth
 Un motor de audio DSP en tiempo real implementado como servidor.
 1.2 supernova
 Un servidor alternativo a scsynth con soporte para DSP en procesadores multinúcleo.
 
-2)sclang
+2) sclang
 Un lenguaje de programación basado en texto que actua como cliente para el servidor.
 
-3)ScIDE
+3) ScIDE
 Un editor para SuperCollider con un sistema de ayuda integrado.
 
 ¿Por qué no juntar todo en una arquitectura unificada?
@@ -27,7 +27,9 @@ El diseño de SuperCollider está pensado para ser extremadamente flexible y efi
 
 -La conexión de múltiples clientes a un solo servidor.
 
--La posibilidad de crear múltiples instancias del servidor para: (1)gestionar procesos independientes en paralelo (esto evita que un proceso intensivo afecte al resto),(2)configurar una salida de audio distinta para cada servidor (esto permite generar sonido en múltiples salidas de manera simultanea).
+-La posibilidad de crear múltiples instancias del servidor para:
+(1) gestionar procesos independientes en paralelo (esto evita que un proceso intensivo afecte al resto),
+(2) configurar una salida de audio distinta para cada servidor (esto permite generar sonido en múltiples salidas de manera simultanea).
 
 -y...¡MUCHAS otras posibilidades!
 
@@ -43,3 +45,5 @@ El diseño de SuperCollider está pensado para ser extremadamente flexible y efi
 
 //Para ir al tutorial anterior, ejecuta la siguiente línea de código
 "1.1 Presentación y recursos.scd".openOS;
+
+(PathName.new(thisProcess.nowExecutingPath).parentPath+/+"1.1 Presentación y recursos.scd").openOS;
