@@ -7,9 +7,21 @@ Una definición de síntesis representa del lado del lenguaje, los parámetros d
 
 La clase SynthDef nos permite trabajar de manera más felxible y especializada con definiciones de síntesis.
 
-La estructura básica de una definición de síntesis es la siguiente.
+La clase Synth es la que inicia y controla del lado del lenguaje, los nodos de síntesis que ocurren en el servidor.
 */
 
+(
+var ventana, img;
+ventana = Window("SynthDef - Synth", Rect(200, 200, 1127, 768));
+img = Image.open(thisProcess.nowExecutingPath.dirname +/+ "/media/synthdef_synth.png");
+
+UserView(ventana,ventana.view.bounds).drawFunc_({img.drawInRect(Rect(0, 0, 1127, 768)) });
+
+ventana.front;
+);
+
+
+//La estructura básica de una definición de síntesis es la siguiente.
 (
 SynthDef.new(//Clase SynthDef con método .new
 	\miPrimerSinte, //Nombre a manera de symbol o string
@@ -17,34 +29,33 @@ SynthDef.new(//Clase SynthDef con método .new
 ).play; //Método: ¿Qué se hace con esta nueva definición de síntesis?
 )
 
-/*
-Si queremos reproducir el resultado de la definición de manera inmediata (creando de forma automática su respectivo nodo de síntesis), usamos el método .play
+//Si queremos reproducir el resultado de la definición de manera inmediata (creando de forma automática su respectivo nodo de síntesis), usamos el método .play
 
-Pero entonces, ¿por qué no obtenemos sonido al evaluar la definición anterior?
-
-Hasta ahora hemos estado generando sonido con funciones y el método .play. Sin embargo, la estructura de definiciones y nodos de síntesis es la única forma de producir sonido en SuperCollider. Aplicado a una función, el método .play crea automáticamente una definción y un nodo de síntesis. Si la función no cuenta con parámetros de envolvente y de salida, el método .play los añade de manera automática. Cuando creamos una definición de síntesis personalizada, la envolvente y la salida deben ser especificadas manualmente.
-*/
-
-(
-SynthDef.new(
-	\miPrimerSinte,
-	{var sig; //Agregamos variables para más claridad en el proceso
-		sig = Pulse.ar(220,0.5,0.4); //Generador de unidades
-		Out.ar(0,sig) //EFspecificación de la salida
-		}
-).play;
-)
-
-//Out toma dos argumentos: (1) el número de índice del bus o buses por los que saldrá la señal de audio o control (0 y 1 a menudo son los canales izquierdo y derecho respectivamente), (2) un UGen o arreglo de Ugens.
+//Pero entonces, ¿por qué no obtenemos sonido al evaluar la definición anterior?
 
 /*
 Los nodos de síntesis activos se pueden consultar en el árbol de nodos. Se puede accesar a esta herramienta desde
 
 1. Barra de herramienta1s > Server > Show Node Tree
 2. El atajo de teclado: Ctrl + Alt + T
-3. La línea de código: */
+3. La línea de código:
+*/
 
 NodeTreeView(s).start;
+
+//Hasta ahora hemos estado generando sonido con funciones y el método .play. Sin embargo, la estructura de definiciones y nodos de síntesis es la única forma de producir sonido en SuperCollider. Aplicado a una función, el método .play crea automáticamente una definción y un nodo de síntesis. Si la función no cuenta con parámetros de envolvente y de salida, el método .play los añade de manera automática. Cuando creamos una definición de síntesis personalizada, la envolvente y la salida deben ser especificadas manualmente.
+
+(
+SynthDef.new(
+	\miPrimerSinte,
+	{var sig; //Agregamos variables para más claridad en el proceso
+		sig = Pulse.ar(220,0.5,0.4); //Generador de unidades
+		Out.ar(0,sig) //Especificación de la salida
+		}
+).play;
+)
+
+//Out toma dos argumentos: (1) el número de índice del bus o buses por los que saldrá la señal de audio o control (0 y 1 a menudo son los canales izquierdo y derecho respectivamente), (2) un UGen o arreglo de Ugens.
 
 /*
 Si queremos agregar una definición de síntesis al servidor sin crear el nodo de síntesis de manera inmediata, usamos  el método .add
@@ -67,11 +78,9 @@ SynthDef.new(
 )
 
 //Una definción de síntesis añadida al servidor se ejecuta de manera asincrónica con la clase Synth. Como mínimo, Synth necesita el nombre de la definición de síntesis para funcionar.
-
 Synth(\miPrimerSinte);
 
 //Synth también puede especificar argumentos iniciales específicos
-
 Synth(\miPrimerSinte, [\freq, 1000, \amp, 0.8]);
 
 //Si asignamos la reproducción de Synth a una variable, podemos interectuar con ella después del inicio de su reproducción
@@ -83,11 +92,13 @@ Synth(\miPrimerSinte, [\freq, 1000, \amp, 0.8]);
 ~nodo1.set(\freq, 999, \amp, 0.3);
 
 //Parámetros aleatorios de arguementos establecidos con .set
-
 ~nodo1.set(\freq, exprand(50,1000), \amp, rrand(0.3,1));
 
 //Liberación del nodo
 ~nodo1.free;
+
+//Liberación manual de nodo (es necesario conocer su identificador)
+s.sendMsg(\n_free, 1028);
 
 //Con una sola definición, pueden crearse múltiples nodos de síntesis sin compilar la definición en cada ocasión. Esto contribuye a optimizar recursos y presenta una ventaja de procesamiento con el método .play en una función, el cual tiene que compilarse cada vez que se ejecuta.
 
