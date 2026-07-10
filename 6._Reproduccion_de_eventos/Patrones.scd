@@ -24,6 +24,10 @@ Pattern
 //Una librería compleja dedicada a la secuenciación en contextos musicales.
 //Un objeto de la clase Pattern es como una partitura, en el sentido de que es una serie de instrucciones que por si mismas no pueden ejecutar nada.
 
+/*///////////////////////////////////////////////
+//Patterns define behavior; streams execute it.//
+*////////////////////////////////////////////////
+
 //Al evaluar el objeto Pseq, solo nos regresa el mismo (similar a las funciones).
 x = Pseq([1,2,3,4,5,9], 1);
 
@@ -206,5 +210,112 @@ Secuencia una serie geométrica. Se especifica un número inicial y el factor de
 ~seq_11.nextN(10);
 ~seq_11.reset;
 
+//Cuando la operación involucra una secuencia la operación se realiza un elemento a la vez ignorando posicisiones. Cuando la cantidad de valores por secuencia no coincide, estos se desplazan.
 
+~pat_12 = Pseq([10,20,30],inf) + Pseq([1,2,3,4],inf);
+~seq_12 = ~pat_12.asStream;
+~seq_12.nextN(10);
+~seq_12.reset;
 
+//Patrones anidados.
+//Una funcionalidad muy poderosa de los patrones es que es posible anidarlos, ie. poner patrones dentro de patrones.
+
+(
+~pat_13 = Pseq(
+	[
+		Pseq([1,2,3],1),
+		Prand([-10,10],1),
+		Pshuf([\perro, \gato, \vaca],1),
+		Pwhite(-1.0,1.0,1)
+	],
+	inf
+);
+)
+
+~seq_13 = ~pat_13.asStream;
+~seq_13.next;
+~seq_13.reset;
+
+/*//////////
+//El Pbind//
+*///////////
+
+//Eventos
+Event
+
+//Es una colección de pares de "claves" y valores. ie cada valor es llamado por una clave. Similar a un diccionario.
+
+~evento = (freq: 220, dur: 0.5); //Creamos un evento con dos "claves". \freq asociada al valor 220 y \dur asociada al valor 0.5.
+
+~evento[\freq]; //Podemos recuperar el valor de una clave llamando al evento e indicando su clave entre [].
+~evento.freq; //Funciona igual si llamamos con la clave como metodo.
+
+~evento[\freq] = 880; //podemos modificar el valor de cada clave asignandole uno nuevo.
+~evento[\freq];
+
+~evento.put(\amp, 0.5);//Es posible añadir claves y valores sobre la marcha.
+~evento;
+
+//Los eventos son una clase de colección muy particular ya que cuentan con muchos comportamientos y propiedades predefinidos lo cual los vuelve  una clase muy robusta.
+~evento.play;
+
+().play; //Incluso el evento menos descrito tiene un comportamiento.
+
+//Pbind
+Pbind
+// Objeto que combina varios streams en un solo "evento".
+
+(
+~pbind = Pbind( //Creamos un objeto Pbind.
+	\freq, Pseq([60,64,66,68,71].midicps,1), // asignamos a la clave \freq el Pattern Pseq.
+	\dur, Pseq([0.5,0.25,0.5,0.5,0.25,0.25,1],1) //ahora asignamos a la clave \dur otro pattern Pseq con un tamaño diferente.
+);
+
+~pbindStream = ~pbind.asStream; //Convertimos en stream
+)
+
+~pbindStream.next(Event.new); //llamamos el siguiente valor con .next(Event.new).
+~pbindStream.reset;
+
+//Que está sucediendo cada vez que evaluamos .next?
+
+~eventStreamPlayer = ~pbind.play; //Al reproducir un Pbind con el metodo .play se crea un objeto especial llamado EventStreamPlayer que se encarga de gestionar varias cosas de la reproducción del Pbind.
+
+//OJO, hasta este punto no hemos creado ningun Synth!
+
+(
+~ejemplo0 = Pbind(
+	\dur, Pseq([0.75,0.5,0.5,0.25,0.75,0.5,0.5,0.25,0.25,0.25,0.25,1],1)
+	\freq, Pseq([60,64,66,69,67,64,60,57,54,54,54,55].midicps,1),
+);
+~ejemplo0.play;
+)
+
+//y los silencios?
+
+//Rest : Recibe como argumento un numero que representa la cantidad de tiempo. Indica que el evento en cuestión es un descanzo o silencio.
+(
+~ejemplo1 = Pbind(
+	\dur, Pseq([0.25,0.25,0.25,2,Rest(rrand(1,3))],2), //Usamos la clase Rest
+	\freq, Pseq([67,67,67,63,63,65,65,65,62,62].midicps,1),
+).trace; //el metodo .trace nos ayuda a monitorear los valores del evento.
+~ejemplo1.play;
+)
+
+//Symbol.
+
+(
+~ejemplo2 = Pbind(
+	\dur, Pseq([0.25],inf), //repeticiones infinitas
+	\midinote, Pseq([55,55,55,55,60,\rest,\r,\],inf), //Ahora las alturas las define la clave \midinote.
+).trace; //ahora los silencios estan siendo determiados al colocar simbolos en alguna clave que no sea dur:
+~ejemplo2.play;
+)
+
+//Para mas información de las claves disponibles para un evento por default visita el archivo de ayuda:
+
+Event
+
+/*/////////////////////////
+//COMBO: SynthDef + Pbind//
+*//////////////////////////
