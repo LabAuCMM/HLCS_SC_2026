@@ -54,13 +54,10 @@
 ## Día 3
 #### Reproducción de audio
 * Buffers y manejo de archivos de audio
-* Reproducción de archivos de audio
+* PlayBuf y BufRd
 
 #### Procesamiento de audio
 * SoundIn
-* Buses
-* Filtros
-* Grupos de nodos y orden de procesamiento
 * Efectos
 
 #### Técnicas de síntesis I
@@ -81,6 +78,9 @@
 #### Interacción y conectividad
 * Control por MIDI
 * Control por OSC
+
+
+Buses, grupos de nodos y orden de procesamiento
 
 #### Ejercicios prácticos
 * Ejercicio libre en conjunto: lluvia de ideas.
