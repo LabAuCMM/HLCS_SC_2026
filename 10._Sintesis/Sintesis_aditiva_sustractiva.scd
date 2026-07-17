@@ -299,7 +299,7 @@ Ref
 //DynKlang : similar a Klang con la diferencia de que se pueden modificar sus valores posterior a la inicialización.
 
 //Podemos abreviar la creación de un Ref mediante una coma invertida. (`)
-`[].class;
+`[].class; //Ref
 
 (
 {
@@ -314,6 +314,46 @@ Ref
 	DynKlang.ar(ref, SinOsc.kr({rrand(0.4,0.5)}!2, {rrand(0,pi)}!2).range(0.5,16));
 }.scope;
 )
+
+//EJEMPLO.
+(
+SynthDef.new(\aditivo, {
+	arg freq = 60, scale = 1, a = 1, s = 1, r = 1;
+	var sig, env;
+
+	env = EnvGen.ar(
+		envelope: Env.linen(a,s,r),
+		gate: 1,
+		doneAction: 2
+	);
+
+	sig = 12.collect({
+		arg i;
+		freq = freq + (i/11 * scale);
+		SinOsc.ar(freq.midicps, mul: 12.reciprocal);
+	});
+	sig = sig.scramble;
+	sig = Splay.ar(sig);
+	sig = sig * env;
+
+	Out.ar(0, sig!2);
+}).add;
+
+
+~p = Pbind(
+	\instrument, \aditivo,
+	\freq, Prand([60,67,69]-12,inf),
+	\scale, Pseq([1,7,12,24],inf),
+	\a, Prand([0.5,1],inf),
+	\s,Prand([0.5,0.5],inf),
+	\r,Prand([0.5,1],inf),
+
+	\dur, Pwhite(1.0,3.0),
+);
+
+~q = ~p.play;
+)
+
 
 /*//////////////////////
 //Sintesis sustractiva//
@@ -338,19 +378,91 @@ freq: Frecuencia de corte. Lugar en el espectro de frecuencias donde el filtro e
 rq: Factor de calidad. Indice que refiere a la proporción entre la frecuencia central y el ancho de banda. No aplica en todos los casos.
 */
 
-//Para ejemplificar el efecto de los filtros usaremos un generador de ruido blanco
-//El ruido blanco es el resultado de todas las frecuencias audibles con igualdad de intensidad.
-{WhiteNoise.ar(1)}.plot(0.001);
+//Señales complejas.
+//En general, para la sintesis sustractiva, es conveniente partir de una señal compleja. ie, ruidosa.
+/*
+Repasemos algunas señales "ruidosas"
+*/
 
-{WhiteNoise.ar(0.1)}.scope;
+//WhiteNoise.ar : Ruido blanco, resultado de todas las frecuencias audibles con igualdad de intensidad.
+
+{WhiteNoise.ar}.plot(0.1);
+
+(
+{WhiteNoise.ar(mul: 0.1!2)}.scope;
+FreqScope.new;
+);
+
+//PinkNoise.ar : Ruido rosa, resultado de todas las frecuencias audibles con una reducción de amplitud de 3 dB por octava.
+
+{PinkNoise.ar}.plot(1);
+
+(
+{PinkNoise.ar(mul: 0.66!2)}.scope;
+FreqScope.new;
+)
+
+//BrownNoise.ar : Ruido browniano, resultado de todas las frecuencias audibles con una reducción de amplitud de 6 dB por octava.
+
+{BrownNoise.ar}.plot(1);
+
+(
+{BrownNoise.ar(mul: 0.66!2)}.scope;
+FreqScope.new;
+)
+
+//Ruido de baja frecuencia.
+//Existe una clase de generadores de ruido que nos permiten controlar la frecuencia con la que generan valores. Por lo general se utilizan como señales de control (.kr) y hay de 3 tipos [0,1,2].
+
+//LFNoise : ideal en casos donde no se requieren cambios drasticos o modulación en la frecuencia.
+(
+{
+	var x,y,z;
+	var freq = 10;
+	x = LFNoise0.kr(freq); //Produce valores aleatorios entre 1 y -1 sin interpolación.
+	y = LFNoise1.kr(freq); //Procude valores aleatorios entre 1 y -1 con interpolación lineal.
+	z = LFNoise2.kr(freq); //Produce valores aleatorios con interpolación cuadrática. (OJO!: el rango puede sobrepasar el -1,1).
+	[x,y,z];
+}.plot(1)
+)
+
+//LFDNoise : ideal en casos donde se requiere una frecuencia dinámica.
+(
+{
+	var x,y,z;
+	var freq = 10;
+	x = LFDNoise0.kr(freq); //Produce valores aleatorios entre 1 y -1 sin interpolación.
+	y = LFDNoise1.kr(freq); //Procude valores aleatorios entre 1 y -1 con interpolación lineal.
+	z = LFDNoise3.kr(freq); //Produce valores aleatorios con interpolación cúbica. (OJO!: el rango puede sobrepasar el -1,1).
+	[x,y,z];
+}.plot(1)
+)
+
+//Expansión Multicanal.
+(
+{
+	var sig;
+	sig = LFNoise1.ar(10);
+	sig!2;
+}.plot(1);
+)
 
 (
 {
-	var noise;
-	noise = LFNoise0.ar(100);
-	[noise, LPF.ar(noise, 2)]
+	var sig;
+	sig = LFNoise1.ar(10!2);
+	sig;
 }.plot(1);
 )
+
+/*/////////
+//FILTROS//
+*//////////
+
+¡MUCHO OJO, LOS VALORES DE FREQ DE UN FILTRO JAMAS DEBEN IR POR DEBAJO DEL 0 NI POR ENCIMA DEL 20,000!
+POR ELLO ENVOLVEMOS EL ARGUMENTO EN UN METODO .CLIP
+
+{SinOsc.ar(100).clip(-0.2,0.2)}.plot;
 
 //LPF : Low Pass Filter ó Fitro Pasa Graves.
 //Reduce la amplitud de todas las frecuencias por encima de la frecuencia de corte.
@@ -358,23 +470,176 @@ rq: Factor de calidad. Indice que refiere a la proporción entre la frecuencia c
 //LPF.ar(Señal a ser afectada, frecuencia de corte) no tiene factor de cualidad.
 (
 {
+	var sig;
+	sig = WhiteNoise.ar(0.6);
+
 	LPF.ar(
-		in: WhiteNoise.ar(0.6),
-		freq: MouseX.kr(20,12e3).clip(20,12e3)
+		in: sig,
+		freq: MouseX.kr(minval: 20, maxval: 12e3, warp: 1).clip(20,12e3)
 	)
 }.scope;
 FreqScope.new;
 )
 
+//HPF : High Pass Filter ó Fitro Pasa Agudos.
+//Reduce la amplitud de todas las frecuencias por debajo de la frecuencia de corte.
 
-RLPF.ar
-Resonz
+//HPF.ar(Señal a ser afectada, frecuencia de corte) no tiene factor de cualidad.
+(
+{
+	var sig;
+	sig = WhiteNoise.ar(0.6);
 
-WhiteNoise
+	HPF.ar(
+		in: sig,
+		freq: MouseX.kr(minval: 20, maxval: 12e3, warp: 1).clip(20,12e3)
+	)
+}.scope;
+FreqScope.new;
+)
 
-PinkNoise
+//BPF : Band Pass Filter ó Fitro de Banda.
+//Reduce la amplitud de todas las frecuencias por encima y debajo de la frecuencia de corte, en proporción al indicie de cualidad.
 
-Filtros
+//BPF.ar(Señal a ser afectada, frecuencia de corte, reciproco del factor de cualidad [valores muy cercanos a 0, 1]).
+(
+{
+	var sig;
+	sig = WhiteNoise.ar(0.6);
 
+	BPF.ar(
+		in: sig,
+		freq: MouseX.kr(minval: 20, maxval: 12e3, warp: 1).clip(20,12e3),
+		rq: MouseY.kr(minval: 0.0001, maxval: 10, warp: 1),
+	)
+}.scope;
+FreqScope.new;
+)
 
+//Una ligera modificación que podemos realizar para compensar la perdida de amplitud al reducir el rq es utilizar como valor de amplitud lo siguiente: sqrt(1/rq).
+(
+{
+	var sig, freq, rq;
+	sig = WhiteNoise.ar(0.6);
+	freq = MouseX.kr(minval: 20, maxval: 12e3, warp: 1).clip(20,12e3);
+	rq = MouseY.kr(minval: 0.0001, maxval: 10, warp: 1);
 
+	BPF.ar(
+		in: sig,
+		freq: freq,
+		rq: rq,
+		mul: rq.reciprocal.sqrt;
+	)
+}.scope;
+FreqScope.new;
+)
+
+//RLPF y RHPF : Resonant Low y High Pass Filter o filtros Resonantes.
+//Similar a sus contrapartes con la adición de un factor de cualidad. Este genera una concentración de energía en la frecuencia de corte.
+
+//R(L,H)PF.ar(Señal a ser afectada, frecuencia de corte, reciproco del factor de cualidad [valores muy cercanos a 0, 1]).
+(
+{
+	var sig;
+	sig = WhiteNoise.ar(0.1);
+
+	RLPF.ar(
+	//RHPF.ar(
+		in: sig,
+		freq: MouseX.kr(minval: 20, maxval: 12e3, warp: 1).clip(20,12e3),
+		rq: MouseY.kr(minval: 0.01, maxval: 10, warp: 1),
+	)
+}.scope;
+FreqScope.new;
+)
+
+// MoogFF : implementación digital de un clasico fitro de escalera Moog VCF.
+// MoogFF.ar(señal a ser afectada, frecuencia de corte, ganancia de la resonancia del filtro [0 - 4]).
+(
+{
+	var sig;
+	sig = WhiteNoise.ar(0.66);
+
+	MoogFF.ar(
+		in: sig,
+		freq: MouseX.kr(minval: 20, maxval: 12e3, warp: 1).clip(20,12e3),
+		gain: MouseY.kr(minval: 0, maxval: 4, warp: 0),
+	)
+}.scope;
+FreqScope.new;
+)
+
+//Ejemplo
+(
+SynthDef.new(\sustractiva,{
+	arg freq = 60, lpfFreq = 2e3, amp = 0.7, a = 0.1, s = 0.2, r = 0.7, pos = 0;
+	var sig, env;
+
+	env = EnvGen.ar(
+		envelope: Env.perc(a,r),
+		gate: 1,
+		doneAction: 2
+	);
+
+	sig = Saw.ar(freq.midicps, amp);
+	// sig = LPF.ar(sig, lpfFreq);
+	sig = LPF.ar(sig, env.linexp(0,1,lpfFreq * 0.1,lpfFreq).clip(20,2e4));
+	sig = sig * env;
+	sig = Pan2.ar(sig, pos);
+	Out.ar(0,sig);
+}).add;
+
+// Synth(\sustractiva);
+
+~p = Pbind(
+	\instrument, \sustractiva,
+	\dur, Pwrand([0.25,0.5],[8,1].normalizeSum,inf),
+	\freq, Pseq(Scale.dorian.degrees + 48, inf),
+	\lpfFreq, 12000,
+	\a, Pwhite(0.01,0.05),
+	\r, Pwhite(0.25,0.3),
+	\pos, Prand([-0.5,0,0.5],inf),
+	\amp, Prand([-12,-6,-3].dbamp,inf),
+);
+)
+
+(
+~tempo = TempoClock.new(80/60);
+~q = ~p.play(~tempo);
+)
+
+(
+~q.stream = Pbind(
+	\instrument, \sustractiva,
+	\dur, Pwrand([0.25, 0.5],[3,1].normalizeSum,inf),
+	\freq, Pshuf(Scale.minorPentatonic.degrees,inf) + Prand([60, 48],inf),
+	\lpfFreq, Pseq([
+		Pn(2000, 3),
+		Pn(12000, 1),
+	], inf),
+	\a, Pwhite(0.01,0.05),
+	\r, Prand([
+		Pwhite(0.25,0.3, 1),
+		Pwhite(0.5,0.7, 1),
+	],inf),
+	\pos, Prand([-0.5,0,0.5],inf),
+	\amp, Pwrand([-12,-6,-3,0].dbamp, [4,3,2,1].normalizeSum,inf),
+).asStream;
+)
+
+~tempo.tempo = 120/60;
+~q.stop;
+
+(
+~tempor = Routine{
+	inf.do{
+		arg i;
+		i = i%4;
+		i = i*10;
+		~tempo.tempo = 120 - i/60;
+		(~tempo.tempo.reciprocal * 4).wait;
+	}
+};
+)
+~tempor.play;
+~tempor.stop;
