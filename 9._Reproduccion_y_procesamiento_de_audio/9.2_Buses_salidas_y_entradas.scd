@@ -95,8 +95,7 @@ SoundIn requiere que especifiquemos el núemero de bus de entrada. Este número 
 (
 {
 	var in, sig;
-	in = In.ar(~fxBus = Bus.audio(s,1);
-,1); //In posee como argumentos, el bus de entrada y el número de canales a leer.
+	in = In.ar(~fxBus,1);
 	sig = CombC.ar(in,decaytime: 5);
 	Out.ar(1, sig)
 }.play;
