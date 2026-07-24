@@ -228,10 +228,13 @@ FreqScope.new;
 
 
 (
+s.newBusAllocators;
 
 ~grp = Group.new;
 ~fxGrp = Group.after(~grp);
+
 ~fxBus = Bus.audio(s,2);
+
 ~tempo = TempoClock.new;
 
 SynthDef(\fm, {
@@ -252,22 +255,23 @@ SynthDef(\fm, {
 
 	sig = car1 + car2;
 	sig = sig * amp * env;
-	Out.ar(0,sig!2);
+
+	Out.ar(0,sig!2 * -6.dbamp);
 	Out.ar(bus, sig!2);
 }).add;
 
 SynthDef(\fx,{
-	arg in;
+	arg in, room = 10, rev = 3, amp = 0.33;
 	var sig;
 	sig = In.ar(in,2);
-	sig = GVerb.ar(sig);
-	sig = sig * 0.33;
+	sig = GVerb.ar(sig, room, rev);
+	sig = sig * amp;
 	Out.ar(0,sig);
 }).add;
 
 ~fxNode = Synth(
 	\fx,
-	args:[\in, ~fxBus ],
+	args:[\in, ~fxBus],
 	target: ~fxGrp
 );
 
@@ -286,9 +290,28 @@ SynthDef(\fx,{
 	\rel, Pkey(\dur),
 	\bus, ~fxBus
 );
-~q = ~p.play(~tempo);
 )
-~tempo.tempo = 45/60;
+
+~q = ~p.play;
+
+~fxNode.set(\amp, 0.1, \room, 2, \rev, 2)
+~tempo.tempo = 60/60;
 ~q.stop;
 
-
+(
+~q.stream = Pbind(
+	\instrument, \fm,
+	\group, ~grp,
+	\dur, Plprand(0.01,0.5).round(1/16) * 5,
+	\fc1, Pshuf([60,62,64,67,69].midicps,inf) * 0.5,
+	\fc2, Pkey(\fc1) * Prand([0,1,1.5,2].midiratio,inf),
+	\fm1, Prand([2,3,5,7,11],inf),
+	\fm2, Prand([2,3,5,7,11],inf),
+	\mi1, Pwhite(1,10) * 1,
+	\mi2, Pwhite(1,10) * 1,
+	\amp, Pxrand([0,-3,-6,-12].dbamp,inf) * 0.2,
+	\atk, Pkey(\dur) * Pwhite(0.5,0.7),
+	\rel, Pkey(\dur) - Pkey(\atk) * 4,
+	\bus, ~fxBus,
+).asStream;
+)
